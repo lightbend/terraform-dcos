@@ -39,9 +39,9 @@ resource "aws_instance" "bootstrap" {
 
   # DCOS ip detect script
   provisioner "file" {
-   source = "${var.ip-detect["aws"]}"
+   source = "${coalesce(var.ip-detect["aws"], local.ip-detect["aws"])}"
    destination = "/tmp/ip-detect"
-   }
+  }
 
   # OS init script
   provisioner "file" {
