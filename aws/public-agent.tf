@@ -150,10 +150,10 @@ resource "null_resource" "public-agent" {
   }
 }
 
-output "Public Agent ELB Address" {
+output "Public_Agent_ELB_Address" {
   value = "${aws_elb.public-agent-elb.dns_name}"
 }
 
-output "Public Agent Public IP Address" {
+output "Public_Agent_Public_IP_Address" {
   value = ["${aws_instance.public-agent.*.public_ip}"]
 }

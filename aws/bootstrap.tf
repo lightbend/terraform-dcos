@@ -249,6 +249,6 @@ resource "null_resource" "bootstrap" {
   }
 }
 
-output "Bootstrap Public IP Address" {
+output "Bootstrap_Public_IP_Address" {
   value = "${aws_instance.bootstrap.public_ip}"
 }
