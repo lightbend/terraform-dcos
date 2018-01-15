@@ -83,6 +83,10 @@ resource "aws_route_table" "public-route-table" {
     Name = "${data.template_file.cluster-name.rendered}-pub-rt"
     cluster = "${data.template_file.cluster-name.rendered}"
   }
+
+  depends_on = [
+    "aws_internet_gateway.default"
+  ]
 }
 
 # Create private route table with nat gateway route
@@ -98,6 +102,10 @@ resource "aws_route_table" "private-route-table" {
     Name = "${data.template_file.cluster-name.rendered}-priv-rt"
     cluster = "${data.template_file.cluster-name.rendered}"
   }
+
+  depends_on = [
+    "aws_nat_gateway.default"
+  ]
 }
 
 # Create a subnet to launch public nodes into
