@@ -50,30 +50,34 @@ resource "aws_s3_bucket" "dcos_bucket" {
 resource "aws_route_table" "public-route-table" {
   vpc_id = "${aws_vpc.default.id}"
 
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = "${aws_internet_gateway.default.id}"
-  }
-
   tags {
     Name = "${data.template_file.cluster-name.rendered}-pub-rt"
     cluster = "${data.template_file.cluster-name.rendered}"
   }
 }
 
+resource "aws_route" "ig-gateway-route" {
+  route_table_id         = "${aws_route_table.public-route-table.id}"
+
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = "${aws_internet_gateway.default.id}"
+}
+
 # Create private route table with nat gateway route
 resource "aws_route_table" "private-route-table" {
   vpc_id = "${aws_vpc.default.id}"
-
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = "${aws_nat_gateway.default.id}"
-  }
 
   tags {
     Name = "${data.template_file.cluster-name.rendered}-priv-rt"
     cluster = "${data.template_file.cluster-name.rendered}"
   }
+}
+
+resource "aws_route" "nat-gateway-route" {
+  route_table_id         = "${aws_route_table.private-route-table.id}"
+
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = "${aws_nat_gateway.default.id}"
 }
 
 # Create an internet gateway to give our subnet access to the outside world
