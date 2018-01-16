@@ -46,30 +46,6 @@ resource "aws_s3_bucket" "dcos_bucket" {
   }
 }
 
-# Create an internet gateway to give our subnet access to the outside world
-resource "aws_internet_gateway" "default" {
-  vpc_id = "${aws_vpc.default.id}"
-
-  tags {
-    Name = "${data.template_file.cluster-name.rendered}-ig"
-    cluster = "${data.template_file.cluster-name.rendered}"
-  }
-}
-
-resource "aws_eip" "pub-subnet-nat-eip" {
-  vpc = true
-}
-
-resource "aws_nat_gateway" "default" {
-  allocation_id = "${aws_eip.pub-subnet-nat-eip.id}"
-  subnet_id     = "${aws_subnet.public.id}"
-
-  tags {
-    Name = "${data.template_file.cluster-name.rendered}-ng"
-    cluster = "${data.template_file.cluster-name.rendered}"
-  }
-}
-
 # Create public route table with internet gateway route
 resource "aws_route_table" "public-route-table" {
   vpc_id = "${aws_vpc.default.id}"
@@ -83,10 +59,6 @@ resource "aws_route_table" "public-route-table" {
     Name = "${data.template_file.cluster-name.rendered}-pub-rt"
     cluster = "${data.template_file.cluster-name.rendered}"
   }
-
-  depends_on = [
-    "aws_internet_gateway.default"
-  ]
 }
 
 # Create private route table with nat gateway route
@@ -102,10 +74,30 @@ resource "aws_route_table" "private-route-table" {
     Name = "${data.template_file.cluster-name.rendered}-priv-rt"
     cluster = "${data.template_file.cluster-name.rendered}"
   }
+}
 
-  depends_on = [
-    "aws_nat_gateway.default"
-  ]
+# Create an internet gateway to give our subnet access to the outside world
+resource "aws_internet_gateway" "default" {
+  vpc_id = "${aws_vpc.default.id}"
+
+  tags {
+    Name = "${data.template_file.cluster-name.rendered}-ig"
+    cluster = "${data.template_file.cluster-name.rendered}"
+  }
+}
+
+resource "aws_eip" "nat-eip" {
+  vpc = true
+}
+
+resource "aws_nat_gateway" "default" {
+  allocation_id = "${aws_eip.nat-eip.id}"
+  subnet_id     = "${aws_subnet.public.id}"
+
+  tags {
+    Name = "${data.template_file.cluster-name.rendered}-ng"
+    cluster = "${data.template_file.cluster-name.rendered}"
+  }
 }
 
 # Create a subnet to launch public nodes into
@@ -132,17 +124,6 @@ resource "aws_subnet" "private" {
     Name = "${data.template_file.cluster-name.rendered}-priv-sub"
     cluster = "${data.template_file.cluster-name.rendered}"
   }
-}
-
-# Assign route tables to subnets
-resource "aws_route_table_association" "public-routes-public-subnet" {
-  route_table_id = "${aws_route_table.public-route-table.id}"
-  subnet_id      = "${aws_subnet.public.id}"
-}
-
-resource "aws_route_table_association" "private-routes-public-subnet" {
-  route_table_id = "${aws_route_table.private-route-table.id}"
-  subnet_id      = "${aws_subnet.private.id}"
 }
 
 # A security group that allows all port access to internal vpc and to talk to
@@ -338,6 +319,17 @@ resource "aws_security_group" "public-elb" {
     Name = "public-elb-sg"
     cluster = "${data.template_file.cluster-name.rendered}"
   }
+}
+
+# Assign route tables to subnets
+resource "aws_route_table_association" "public-routes-public-subnet" {
+  route_table_id = "${aws_route_table.public-route-table.id}"
+  subnet_id      = "${aws_subnet.public.id}"
+}
+
+resource "aws_route_table_association" "private-routes-private-subnet" {
+  route_table_id = "${aws_route_table.private-route-table.id}"
+  subnet_id      = "${aws_subnet.private.id}"
 }
 
 # Provide tested AMI and user from listed region startup commands
